@@ -38,13 +38,13 @@ cargo build --release
 After building, the main executable will be located in `/target/debug` or `/target/release` based on the build command used.
 Navigate to the directory and type
 ```sh
-Balrs help
+Balrs help start
 ```
 in the terminal to get a list of available commands.
 
 Alternatively, from the root directory of Bal.rs, you can use:
 ```sh
-cargo run help
+cargo run help start
 ```
 for the same result.
 
