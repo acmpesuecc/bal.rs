@@ -5,6 +5,7 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 use std::time::Duration;
+use std::io::{Write};
 
 mod lb;
 
@@ -130,6 +131,50 @@ impl LoadBalancer {
 
         Ok(self)
     }
+    fn write_config_to_file(&self, filename: &str) -> Result<(), Box<dyn Error>> {
+        let mut file = File::create(filename)?;
+
+        // Write load balancer address
+        writeln!(file, "load balancer: {}", self.load_balancer)?;
+        writeln!(file, "!!  load balancer address\n")?;
+
+        // Write load balancer algorithm
+        let algorithm = match self.algo {
+            Algorithm::RoundRobin => "round_robin",
+            Algorithm::WeightedRoundRobin => "weighted_round_robin",
+            Algorithm::LeastConnections => "least_connections",
+            Algorithm::WeightedLeastConnections => "weighted_least_connections",
+            Algorithm::LeastResponseTime => "least_response_time",
+            Algorithm::WeightedLeastResponseTime => "weighted_least_response_time",
+        };
+        writeln!(file, "algorithm: {}", algorithm)?;
+        writeln!(file, "!!  load balancer algorithm\n")?;
+        // Write server addresses
+        let server_addresses: Vec<String> = self.servers.iter().map(|s| s.addr.to_string()).collect();
+        writeln!(file, "servers: {}", server_addresses.join(", "))?;
+        writeln!(file, "!!  server address\n")?;
+
+        // Write server weights
+        let weights: Vec<String> = self.servers.iter().map(|s| s.weight.to_string()).collect();
+        writeln!(file, "weights: {}", weights.join(", "))?;
+        writeln!(file, "!!  server weights\n")?;
+
+        // Write max connections for each server
+        let max_connections: Vec<String> = self.servers.iter().map(|s| s.max_connections.to_string()).collect();
+        writeln!(file, "max connections: {}", max_connections.join(", "))?;
+        writeln!(file, "!!  max connections\n")?;
+
+        // Write server response timeout
+        writeln!(file, "timeout: {}", self.timeout.as_secs())?;
+        writeln!(file, "!!  max server response time (in s)\n")?;
+
+        // Write health check interval
+        writeln!(file, "health check interval: {}", self.health_check_interval.as_secs())?;
+        writeln!(file, "!!  interval (in s) for checking the health of the server")?;
+
+        Ok(())
+    }
+
 }
 
 #[derive(Debug, Clone)]
@@ -198,6 +243,12 @@ weighted_least_connections/wlc, least_response_time/lrt, weighted_least_response
                         .short('s')
                         .long("save")
                         .help("Saves report data to specified file"),
+                )
+                .arg(
+                    Arg::new("save-config")
+                        .short('c')
+                        .long("save-config")
+                        .help("Saves the config to specified path"),
                 ),
         )
         .get_matches();
@@ -211,6 +262,7 @@ weighted_least_connections/wlc, least_response_time/lrt, weighted_least_response
             let algorithm = start_args.get_one::<String>("algorithm");
             let report = start_args.get_one::<bool>("report");
             let save = start_args.get_one::<String>("save file");
+            let save_conf = start_args.get_one::<String>("save-config");
 
             if let Some(path) = path {
                 lb.servers = Vec::new();
@@ -232,6 +284,12 @@ weighted_least_connections/wlc, least_response_time/lrt, weighted_least_response
             if let Some(save) = save {
                 lb.save_file.clone_from(save);
                 lb.save = true;
+            }
+
+            if let Some(save_conf) = save_conf {
+                //println!("{:?}", save_conf);
+                lb.write_config_to_file(save_conf)?;
+
             }
 
             drop(lb::start_lb(lb));
