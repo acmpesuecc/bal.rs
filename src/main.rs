@@ -18,6 +18,7 @@ struct LoadBalancer {
     report: bool,
     save_file: String,
     save: bool,
+    words: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -56,6 +57,7 @@ impl LoadBalancer {
             report: true,
             save_file: String::from("data.txt"),
             save: false,
+            words: Vec::new(),
         }
     }
     fn update(&mut self, path: &str) -> io::Result<&LoadBalancer> {
@@ -66,6 +68,7 @@ impl LoadBalancer {
         let mut servers: Vec<hyper::Uri> = Vec::new();
         let mut weights: Vec<u32> = Vec::new();
         let mut max_connections: Vec<u32> = Vec::new();
+        let mut words: Vec<String> = Vec::new();
 
         for line in reader.lines() {
             let line = line?;
@@ -117,6 +120,12 @@ impl LoadBalancer {
                         .parse::<u64>()
                         .expect("Invalid health check interval"),
                 );
+            } else if line.starts_with("Not allowed:") {
+                let words_ = line.trim_start_matches("Not allowed:").trim();
+                words = words_
+                .split(',')
+                .map(|server| server.trim().parse::<String>().expect("Invalid URI"))
+                .collect();
             }
         }
 
@@ -127,6 +136,8 @@ impl LoadBalancer {
                 max_connections[i],
             ));
         }
+
+        self.words = words;
 
         Ok(self)
     }
@@ -156,9 +167,9 @@ fn cli(mut lb: LoadBalancer) -> Result<(), Box<dyn Error>> {
         .arg_required_else_help(true)
         .about(
             r#"
- ____        _            
-|  _ \      | |           
-| |_) | __ _| |  _ __ ___ 
+ ____        _
+|  _ \      | |
+| |_) | __ _| |  _ __ ___
 |  _ < / _` | | | '__/ __|
 | |_) | (_| | |_| |  \__ \
 |____/ \__,_|_(_)_|  |___/
@@ -176,7 +187,7 @@ L7 Load Balancer Implemented in Rust 🦀
                 )
                 .arg(Arg::new("algorithm").short('a').long("algorithm").help(
                     "Starts load balancer with specified algorithm.
-Available algorithms: round_robin/rr, weighted_round_robin/wrr, least_connections/lc, 
+Available algorithms: round_robin/rr, weighted_round_robin/wrr, least_connections/lc,
 weighted_least_connections/wlc, least_response_time/lrt, weighted_least_response_time/wlrc",
                 ))
                 .arg(

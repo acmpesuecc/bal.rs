@@ -18,3 +18,5 @@ timeout: 10
 
 health check interval: 10
 !!  interval (in s) for checking the health of the server
+
+Not allowed: testing, nigga

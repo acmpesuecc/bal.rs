@@ -303,7 +303,7 @@ where
     T: Loadbalancer,
 {
      // Extract and print the incoming request details
-    let request_details = if let Some(req) = req.as_ref() 
+    let request_details = if let Some(req) = req.as_ref()
     {
         let headers = req.headers()
             .iter()
@@ -317,10 +317,14 @@ where
             headers,
             body: "Body details here".to_string(), // Placeholder, body extraction can be done if needed
         };
-        println!("Incoming request details: {:?}", var );
+        let keywords = lb.lock().unwrap().words.clone();
+        if keywords.iter().any(|keyword| var.uri.contains(keyword)) {
+            println!("A keyword exists in the URI!");
+        }
+        // println!("Incoming request details: {:?}", var );
     } else
      {
-        let var=HttpRequestDetails 
+        let var=HttpRequestDetails
         {
             method: "Unknown".to_string(),
             uri: "Unknown".to_string(),
@@ -330,7 +334,7 @@ where
         };
         println!("Incoming request details: {:?}", var );
     };
-  
+
     //println!("Incoming request details: {:?}", var );
 
     loop {
@@ -419,7 +423,7 @@ where
     let start = Instant::now();
 
     let data = timeout(timeout_duration, send_request(request)).await; // sends request to the address
-    println!("{:?}", data);
+    // println!("{:?}", data);
 
     let duration = start.elapsed(); // gets response time
 
