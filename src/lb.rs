@@ -318,8 +318,8 @@ where
             body: "Body details here".to_string(), // Placeholder, body extraction can be done if needed
         };
         let keywords = lb.lock().unwrap().words.clone();
-        if keywords.iter().any(|keyword| var.uri.contains(keyword)) {
-            println!("A keyword exists in the URI!");
+        if let Some(keyword) = keywords.iter().find(|keyword| var.uri.contains(keyword.as_str())) {
+            println!("A keyword exists in the URI: {}", keyword);
         }
         // println!("Incoming request details: {:?}", var );
     } else
